@@ -1,0 +1,102 @@
+PennController.ResetPrefix(null);
+
+// 1. 音声ファイルと段階のリストを定義
+const myStimuli = [
+    {s: "stim1.wav", step: "1"},
+    {s: "stim2.wav", step: "2"},
+    {s: "stim3.wav", step: "3"},
+    {s: "stim4.wav", step: "4"},
+    {s: "stim5.wav", step: "5"},
+    {s: "stim6.wav", step: "6"},
+    {s: "stim7.wav", step: "7"},
+    {s: "stim8.wav", step: "8"},
+    {s: "stim9.wav", step: "9"}
+];
+
+
+
+
+// 2. 実験の進行順序を定義
+// "experiment" というラベルのついた試行をまとめて実行するようにします
+// "demographics" を welcome の次に追加
+Sequence("welcome", "demographics", "instructions", randomize("experiment"), "send", "bye");
+// ようこそ画面
+newTrial("welcome",
+    newText("Welcome!（ようこそ）").print(),
+    newButton("Next（次へ）").print().wait()
+);
+
+// 説明画面
+newTrial("instructions",
+    newText("You will hear a sound. Please choose whether it sounds like B or P.（音が流れます。BかPか選んでください。）").print(),
+    newButton("Start（開始）").print().wait()
+);
+
+
+// 母語
+// 母語セクションの更新
+newTrial("demographics",
+    newText("ques", "What is your native language?<br>あなたの母語は何ですか？")
+        .css({"font-size": "1.8em", "text-align": "center", "margin-bottom": "2em"})
+        .print("center at 50vw", "middle at 25vh"), // 少し上にずらしてスペースを確保
+
+    // ボタンを作成（横に並べるためにvwの値を分散させています）
+    newButton("lang1", "English").print("center at 15vw", "middle at 45vh"),
+    newButton("lang2", "Japanese").print("center at 29vw", "middle at 45vh"),
+    newButton("lang3", "Chinese").print("center at 43vw", "middle at 45vh"),
+    newButton("lang4", "Korean").print("center at 57vw", "middle at 45vh"),
+    newButton("lang5", "Spanish").print("center at 71vw", "middle at 45vh"),
+    newButton("lang6", "Other").print("center at 85vw", "middle at 45vh"),
+
+    // セレクターで全てのボタンをグループ化
+    newSelector("language")
+        .add( 
+            getButton("lang1"), getButton("lang2"), getButton("lang3"), 
+            getButton("lang4"), getButton("lang5"), getButton("lang6") 
+        )
+        .log() 
+        .wait(),
+
+    // 「次へ」ボタン
+    newButton("next_demo", "次へ (Next)")
+        .css("margin-top", "2em")
+        .print("center at 50vw", "middle at 70vh")
+        .wait()
+);
+// 3. ループを使って1つずつのトライアルを作成する
+// この方法なら「テーブルがない」というエラーは絶対に起きません
+myStimuli.map( item => 
+    newTrial("experiment",
+        newText("fixation", "+").css("font-size", "3em").print("center at 50vw", "middle at 40vh"),
+        newTimer(500).start().wait(),
+        getText("fixation").remove(),
+
+        newAudio("stimulus", item.s).play(),
+        
+        newButton("replay", "Replay（もう一度聴く）")
+            .print("center at 50vw", "middle at 20vh")
+            .callback( getAudio("stimulus").play() ),
+            
+        newText("Which one did you hear? (ABA / APA)　どちらに聞こえましたか？ (ABA / APA)").print("center at 50vw", "middle at 30vh"),
+        
+        newButton("ABA", "B").print("center at 40vw", "middle at 50vh"),
+        newButton("APA", "P").print("center at 60vw", "middle at 50vh"),
+        
+        newSelector("choice")
+            .add( getButton("ABA"), getButton("APA") )
+            .keys("B", "P")
+            .log()
+            .wait()
+    )
+    .log("filename", item.s)
+    .log("step", item.step)
+);
+
+// 結果送信
+SendResults("send");
+
+// 終了
+newTrial("bye",
+    newText("The experiment is complete. Thank you for your participation. 終了です。ありがとうございました。").print(),
+    newButton("void").wait()
+);
